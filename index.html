@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>黄金矿工</title>
+    <meta name="google-signin-client_id" content="679234027308-24hi89l0ujpu2cmamdufbnm144hog79s.apps.googleusercontent.com">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -35,6 +37,57 @@
             display: inline-block;
             font-size: 20px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .user-info {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        .user-info img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+        .user-info .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+        }
+        .user-info .stats span {
+            color: #8B4513;
+        }
+        .login-btn {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .login-btn:hover {
+            background: #3367d6;
+        }
+        .logout-btn {
+            background: #ea4335;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .logout-btn:hover {
+            background: #d33426;
         }
         canvas {
             border: 5px solid #8B4513;
@@ -82,12 +135,99 @@
             color: #666;
             line-height: 1.8;
         }
+        .leaderboard {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            max-height: 400px;
+            overflow-y: auto;
+            min-width: 180px;
+        }
+        .leaderboard h3 {
+            color: #8B4513;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 16px;
+        }
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+        .leaderboard-item:last-child {
+            border-bottom: none;
+        }
+        .leaderboard-item img {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+        }
+        .leaderboard-item .rank {
+            font-weight: bold;
+            color: #FFD700;
+            min-width: 20px;
+        }
+        .leaderboard-item .name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .leaderboard-item .score {
+            font-weight: bold;
+            color: #8B4513;
+        }
+        .hidden {
+            display: none !important;
+        }
+        @media (max-width: 1200px) {
+            .leaderboard {
+                position: static;
+                transform: none;
+                margin-top: 20px;
+                display: inline-block;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="game-container">
         <div class="header">
             <h1>⛏️ 黄金矿工 ⛏️</h1>
+            
+            <!-- 用户信息区域 -->
+            <div id="userSection" class="user-info hidden">
+                <img id="userAvatar" src="" alt="avatar">
+                <span id="userName">玩家</span>
+                <div class="stats">
+                    <span>🏆 最高: <strong id="highScore">0</strong></span>
+                    <span>💰 总计: <strong id="totalScore">0</strong></span>
+                </div>
+                <button class="logout-btn" onclick="handleLogout()">退出</button>
+            </div>
+            
+            <!-- 登录按钮 -->
+            <div id="loginSection" class="user-info">
+                <button class="login-btn" onclick="handleLogin()">
+                    <svg width="18" height="18" viewBox="0 0 48 48">
+                        <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+                        <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+                        <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+                        <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+                    </svg>
+                    Google 登录
+                </button>
+                <span style="color: #666; font-size: 12px;">登录保存积分</span>
+            </div>
+            
             <div class="score-board">
                 <span>💰 金币: <span id="score">0</span></span>
                 <span style="margin-left: 30px;">⏱️ 时间: <span id="time">60</span>秒</span>
@@ -111,11 +251,137 @@
                 <li>💎 钻石: 800分</li>
                 <li>🪨 石头: 20分（会减慢速度）</li>
                 <li>⏱️ 60秒内达到目标分数过关</li>
+                <li>🔐 登录后积分自动保存到云端</li>
             </ul>
+        </div>
+    </div>
+    
+    <!-- 排行榜 -->
+    <div class="leaderboard">
+        <h3>🏆 排行榜</h3>
+        <div id="leaderboardList">
+            <p style="color: #999; font-size: 12px; text-align: center;">加载中...</p>
         </div>
     </div>
 
     <script>
+        // API 配置
+        const API_URL = 'https://gold-miner-api.shuzurenceshi.workers.dev';
+        
+        // 用户状态
+        let currentUser = null;
+        let googleToken = null;
+        
+        // Google 登录
+        function handleLogin() {
+            google.accounts.id.prompt();
+        }
+        
+        // 登录成功回调
+        async function handleCredentialResponse(response) {
+            googleToken = response.credential;
+            
+            try {
+                const res = await fetch(`${API_URL}/api/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id_token: googleToken })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    currentUser = data.user;
+                    updateUserUI();
+                    loadLeaderboard();
+                    
+                    if (data.isNewUser) {
+                        console.log('欢迎新用户！');
+                    }
+                } else {
+                    alert('登录失败: ' + data.error);
+                }
+            } catch (error) {
+                console.error('登录错误:', error);
+                alert('登录失败，请重试');
+            }
+        }
+        
+        // 退出登录
+        function handleLogout() {
+            currentUser = null;
+            googleToken = null;
+            document.getElementById('userSection').classList.add('hidden');
+            document.getElementById('loginSection').classList.remove('hidden');
+        }
+        
+        // 更新用户界面
+        function updateUserUI() {
+            if (!currentUser) return;
+            
+            document.getElementById('userAvatar').src = currentUser.picture || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23ddd"/></svg>';
+            document.getElementById('userName').textContent = currentUser.name || '玩家';
+            document.getElementById('highScore').textContent = currentUser.high_score || 0;
+            document.getElementById('totalScore').textContent = currentUser.total_score || 0;
+            
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('userSection').classList.remove('hidden');
+        }
+        
+        // 同步分数到服务器
+        async function syncScore(score, isHighScore) {
+            if (!currentUser) return;
+            
+            try {
+                await fetch(`${API_URL}/api/score`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        google_id: currentUser.google_id,
+                        score: score,
+                        is_high_score: isHighScore
+                    })
+                });
+                
+                loadLeaderboard();
+            } catch (error) {
+                console.error('同步分数失败:', error);
+            }
+        }
+        
+        // 加载排行榜
+        async function loadLeaderboard() {
+            try {
+                const res = await fetch(`${API_URL}/api/leaderboard`);
+                const data = await res.json();
+                
+                if (data.success && data.leaderboard) {
+                    const list = document.getElementById('leaderboardList');
+                    list.innerHTML = data.leaderboard.map((item, index) => `
+                        <div class="leaderboard-item">
+                            <span class="rank">${index + 1}</span>
+                            <img src="${item.picture || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2250%22 fill=%22%23ddd%22/></svg>'}" alt="">
+                            <span class="name">${item.name || '匿名'}</span>
+                            <span class="score">${item.high_score}</span>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('加载排行榜失败:', error);
+                document.getElementById('leaderboardList').innerHTML = '<p style="color: #999; font-size: 12px; text-align: center;">加载失败</p>';
+            }
+        }
+        
+        // 初始化 Google 登录
+        google.accounts.id.initialize({
+            client_id: '679234027308-24hi89l0ujpu2cmamdufbnm144hog79s.apps.googleusercontent.com',
+            callback: handleCredentialResponse
+        });
+        
+        // 页面加载时获取排行榜
+        loadLeaderboard();
+
+        // ==================== 游戏逻辑 ====================
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
@@ -225,7 +491,6 @@
             ctx.rotate(treasure.rotation);
             
             if (treasure.type.includes('gold')) {
-                // 金子
                 ctx.fillStyle = treasure.color;
                 ctx.beginPath();
                 ctx.arc(0, 0, treasure.size / 2, 0, Math.PI * 2);
@@ -236,7 +501,6 @@
                 ctx.textBaseline = 'middle';
                 ctx.fillText('$', 0, 0);
             } else if (treasure.type === 'diamond') {
-                // 钻石
                 ctx.fillStyle = treasure.color;
                 ctx.beginPath();
                 ctx.moveTo(0, -treasure.size / 2);
@@ -251,7 +515,6 @@
                 ctx.textBaseline = 'middle';
                 ctx.fillText('💎', 0, 0);
             } else if (treasure.type === 'rock') {
-                // 石头
                 ctx.fillStyle = treasure.color;
                 ctx.beginPath();
                 ctx.arc(0, 0, treasure.size / 2, 0, Math.PI * 2);
@@ -268,15 +531,10 @@
         
         // 绘制地面
         function drawGround() {
-            // 天空
             ctx.fillStyle = '#87CEEB';
             ctx.fillRect(0, 0, canvas.width, 200);
-            
-            // 地面
             ctx.fillStyle = '#8B4513';
             ctx.fillRect(0, 200, canvas.width, canvas.height - 200);
-            
-            // 草地
             ctx.fillStyle = '#228B22';
             ctx.fillRect(0, 195, canvas.width, 10);
         }
@@ -285,7 +543,6 @@
         function update() {
             if (!gameState.isPlaying || gameState.isPaused) return;
             
-            // 钩子摆动
             if (!miner.isDropping && !miner.isRetracting) {
                 miner.hookAngle += miner.hookSpeed * miner.hookDirection;
                 if (miner.hookAngle > Math.PI / 3 || miner.hookAngle < -Math.PI / 3) {
@@ -293,11 +550,9 @@
                 }
             }
             
-            // 钩子下放
             if (miner.isDropping) {
                 miner.hookLength += 5;
                 
-                // 检测碰撞
                 const hookX = miner.x + Math.sin(miner.hookAngle) * miner.hookLength;
                 const hookY = miner.y + Math.cos(miner.hookAngle) * miner.hookLength;
                 
@@ -314,14 +569,12 @@
                     }
                 }
                 
-                // 边界检测
                 if (hookX < 0 || hookX > canvas.width || hookY > canvas.height) {
                     miner.isDropping = false;
                     miner.isRetracting = true;
                 }
             }
             
-            // 钩子收回
             if (miner.isRetracting) {
                 miner.hookLength -= miner.retractSpeed;
                 
@@ -341,16 +594,10 @@
         // 绘制游戏
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
             drawGround();
-            
-            // 绘制所有宝物
             treasures.forEach(t => drawTreasure(t));
-            
-            // 绘制矿工
             drawMiner();
             
-            // 游戏信息
             ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
             ctx.fillRect(10, 10, 200, 80);
             ctx.fillStyle = 'white';
@@ -415,15 +662,29 @@
         }
         
         // 结束游戏
-        function endGame() {
+        async function endGame() {
             gameState.isPlaying = false;
             clearInterval(timerInterval);
             
+            const isHighScore = currentUser && gameState.score > (currentUser.high_score || 0);
+            
+            // 同步分数
+            if (currentUser && gameState.score > 0) {
+                await syncScore(gameState.score, isHighScore);
+                
+                // 更新本地显示
+                if (isHighScore) {
+                    currentUser.high_score = gameState.score;
+                }
+                currentUser.total_score = (currentUser.total_score || 0) + gameState.score;
+                updateUserUI();
+            }
+            
             setTimeout(() => {
                 if (gameState.score >= gameState.targetScore) {
-                    alert(`🎉 恭喜过关！\n得分: ${gameState.score}`);
+                    alert(`🎉 恭喜过关！\n得分: ${gameState.score}${isHighScore ? '\n🏆 新纪录！' : ''}`);
                 } else {
-                    alert(`💔 游戏结束\n得分: ${gameState.score}\n目标: ${gameState.targetScore}`);
+                    alert(`💔 游戏结束\n得分: ${gameState.score}\n目标: ${gameState.targetScore}${isHighScore ? '\n🏆 新纪录！' : ''}`);
                 }
             }, 100);
         }
