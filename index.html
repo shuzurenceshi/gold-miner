@@ -372,13 +372,24 @@
         }
         
         // 初始化 Google 登录
-        google.accounts.id.initialize({
-            client_id: '679234027308-24hi89l0ujpu2cmamdufbnm144hog79s.apps.googleusercontent.com',
-            callback: handleCredentialResponse
-        });
+        function initGoogleAuth() {
+            if (typeof google !== 'undefined' && google.accounts) {
+                google.accounts.id.initialize({
+                    client_id: '679234027308-24hi89l0ujpu2cmamdufbnm144hog79s.apps.googleusercontent.com',
+                    callback: handleCredentialResponse
+                });
+                console.log('Google Auth initialized');
+            } else {
+                console.log('Google SDK not loaded, retrying...');
+                setTimeout(initGoogleAuth, 500);
+            }
+        }
         
-        // 页面加载时获取排行榜
-        loadLeaderboard();
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initGoogleAuth();
+            loadLeaderboard();
+        });
 
         // ==================== 游戏逻辑 ====================
         const canvas = document.getElementById('gameCanvas');
