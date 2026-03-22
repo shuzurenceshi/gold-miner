@@ -273,7 +273,16 @@
         
         // Google 登录
         function handleLogin() {
-            google.accounts.id.prompt();
+            if (typeof google === 'undefined' || !google.accounts) {
+                alert('Google SDK 加载中，请稍后再试');
+                return;
+            }
+            google.accounts.id.prompt((notification) => {
+                if (notification.isNotDisplayed()) {
+                    // 如果弹窗被阻止，使用 One Tap 的另一种方式
+                    google.accounts.id.prompt();
+                }
+            });
         }
         
         // 登录成功回调
