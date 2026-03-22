@@ -342,28 +342,34 @@
             loadLeaderboard();
         });
         
-        // 备用登录按钮
+        // 备用登录按钮（使用 One Tap）
         function handleAltLogin() {
-            if (!googleInitialized) {
-                alert('Google SDK 加载中，请稍后重试');
+            if (typeof google === 'undefined' || !google.accounts) {
+                alert('Google SDK 未加载，请刷新页面重试');
                 return;
             }
             
-            // 使用 One Tap 弹窗
+            if (!googleInitialized) {
+                // 尝试重新初始化
+                initGoogleAuth();
+            }
+            
             try {
                 google.accounts.id.prompt();
             } catch (e) {
                 console.error('Prompt error:', e);
-                // 如果 One Tap 失败，尝试其他方式
-                alert('请点击上方的 Google 登录按钮');
+                alert('请刷新页面后重试');
             }
         }
         
         // 登录成功回调
-        async function handleCredentialResponse(response) {
+        function handleCredentialResponse(response) {
             console.log('Login response received');
-            
-            try {
+            verifyToken(response.credential);
+        }
+        
+        // 验证 Token
+        async function verifyToken(idToken) {
                 const res = await fetch(`${API_URL}/api/verify`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
