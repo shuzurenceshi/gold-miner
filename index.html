@@ -291,46 +291,56 @@
         let currentUser = null;
         let googleInitialized = false;
         
-        // Google SDK 加载完成后调用
-        function onGoogleLoad() {
-            console.log('Google SDK loaded');
+        // 初始化 Google 登录
+        function initGoogleAuth() {
+            // 检查 Google SDK 是否加载
+            if (typeof google === 'undefined' || !google.accounts) {
+                console.log('Google SDK not ready, waiting...');
+                document.getElementById('sdkStatus').textContent = 'Google SDK 加载中...';
+                setTimeout(initGoogleAuth, 200);
+                return;
+            }
             
-            // 初始化
-            google.accounts.id.initialize({
-                client_id: CLIENT_ID,
-                callback: handleCredentialResponse,
-                auto_select: false,
-                cancel_on_tap_outside: true
-            });
+            console.log('Google SDK loaded, initializing...');
+            document.getElementById('sdkStatus').textContent = '';
             
-            // 渲染官方按钮
-            google.accounts.id.renderButton(
-                document.getElementById('googleBtn'),
-                {
-                    theme: 'filled_blue',
-                    size: 'large',
-                    width: 200,
-                    text: 'signin_with',
-                    shape: 'rectangular'
-                }
-            );
-            
-            googleInitialized = true;
-            console.log('Google Auth initialized');
+            try {
+                google.accounts.id.initialize({
+                    client_id: CLIENT_ID,
+                    callback: handleCredentialResponse,
+                    auto_select: false,
+                    cancel_on_tap_outside: true
+                });
+                
+                // 渲染官方按钮
+                google.accounts.id.renderButton(
+                    document.getElementById('googleBtn'),
+                    {
+                        theme: 'filled_blue',
+                        size: 'large',
+                        width: 220,
+                        text: 'signin_with',
+                        shape: 'rectangular'
+                    }
+                );
+                
+                googleInitialized = true;
+                console.log('Google Auth initialized successfully');
+                
+                // 隐藏备用按钮（官方按钮可用）
+                document.getElementById('altLoginBtn').style.display = 'none';
+                
+            } catch (e) {
+                console.error('Google init error:', e);
+                document.getElementById('sdkStatus').textContent = '官方按钮加载失败，请使用下方按钮';
+            }
         }
         
-        // 设置回调（SDK加载后执行）
-        if (typeof google !== 'undefined') {
-            onGoogleLoad();
-        } else {
-            window.onload = function() {
-                setTimeout(function() {
-                    if (typeof google !== 'undefined') {
-                        onGoogleLoad();
-                    }
-                }, 500);
-            };
-        }
+        // 页面加载后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initGoogleAuth();
+            loadLeaderboard();
+        });
         
         // 备用登录按钮
         function handleAltLogin() {
