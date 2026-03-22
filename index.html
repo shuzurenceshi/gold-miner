@@ -370,10 +370,11 @@
         
         // 验证 Token
         async function verifyToken(idToken) {
+            try {
                 const res = await fetch(`${API_URL}/api/verify`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id_token: response.credential })
+                    body: JSON.stringify({ id_token: idToken })
                 });
                 
                 const data = await res.json();
