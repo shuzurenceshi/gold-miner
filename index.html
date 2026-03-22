@@ -336,9 +336,9 @@
             }
         }
         
-        // 页面加载后初始化
+        // 页面加载
         document.addEventListener('DOMContentLoaded', function() {
-            initGoogleAuth();
+            setTimeout(initGoogleAuth, 100);
             loadLeaderboard();
         });
         
